@@ -1,8 +1,8 @@
 # evansplot
 
-An Evans plot is a way to visualise two variables, one of which provide some measure of "importance", using hue and saturation (in the HSL paradigm).
+An Evans plot is a way to visualise two variables, one of which provide some measure of "importance", using hue and saturation.
 
-It is able to show, in a natural way, a the cyclic nature of a variable (such as time of day, time of year, etc) by assigning it to the hue.
+It is able to show the cyclic nature of a variable (such as time of day, time of year, etc) in a natural way by assigning it to the hue.
 
 The variable associated with saturation indicates "importance" since low values of this variable fade into grey regardless of the value of the variable associated with the hue.
 
