@@ -7,3 +7,5 @@ It is able to show the cyclic nature of a variable (such as time of day, time of
 The variable associated with saturation indicates "importance" since low values of this variable fade into grey regardless of the value of the variable associated with the hue.
 
 This library is based on the NCL library for generating Evans plots written by by Dr. Jason Evans, an ARC Australian Research Fellow at the Climate Change Research Center, University of New South Wales, Sydney, Australia.
+
+Add something
