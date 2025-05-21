@@ -12,7 +12,8 @@ from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 
 cm = 1/2.54
 
-
+DEFAULT_LIGHTNESS = 0.8
+DEFAULT_ASPECT = 0.25
 
 __all__ = ["evans_plot"]
 
@@ -39,11 +40,17 @@ class _EvansPlotter:
                  data : xr.Dataset, 
                  hue_var : str, 
                  sat_var : str,
-                 lightness = 0.8,
+                 lightness = DEFAULT_LIGHTNESS,
                  num_hue_levels : int = None,
                  num_sat_levels : int = 5,
                  cmap = "hsv",
-                 show_cbar = "horizontal"
+                 cbar = "horizontal",
+                 hue_value_labels : list[str] = None,   
+                 hue_offset_deg : float = 0.0,
+                 min_sat = None,
+                 max_sat = None
+                 #xticklabels : list[str] = None,
+                 #yticklabels: list[str] = None
                  ):
           
         self.hue_data = data[hue_var] # hue (HSL)
@@ -66,22 +73,33 @@ class _EvansPlotter:
         self.hue_data_min = int(self.hue_data.min().item())
         self.hue_data_max = int(self.hue_data.max().item())
         self._unique_hue_data_values = self._get_unique_data_values(self.hue_data)
-        self.hue_value_labels = None #[str(x) for x in self._unique_hue_data_values]
+        self.hue_value_labels = hue_value_labels #[str(x) for x in self._unique_hue_data_values]
         if num_hue_levels is  None:
             # default to number of unique values in hue_var
             self.num_hue_levels = len(self._unique_hue_data_values)
               
         # remaining attributes mimic the NCL implementation   
-        self.max_sat = self.sat_data.max().item() # maximum value of the saturation
-        self.min_sat = self.sat_data.min().item() # minimum value of the satruation
+        
+        # maximum value of the saturation
+        self.max_sat = max_sat 
+        if max_sat is None:
+            self.max_sat = self.sat_data.max().item() 
+            
+        # minimum value of the satruation
+        self.min_sat = min_sat 
+        if min_sat is None: 
+            self.min_sat = self.sat_data.min().item() 
         
         self.hue_label = "Hue label" #TODO
         self.sat_label = "Saturation label" #TODO
-        self.hue_offset_deg = 0.0 # degrees 
-        self.show_cbar = show_cbar 
+        self.hue_offset_deg = hue_offset_deg #0.0 # degrees 
+        self.cbar = cbar 
         self.show_cyclie_car = False # suggested
         
         # formatting
+        #self.xticklabels = xticklabels
+        #self.yticklabels = yticklabels
+        self.font_size_title = 16
         #self.cyclic = False  # TODO # not really a logical thing, more a display thing?
         #self.cbar_orientation = 'horizontal' 
         #self.cbar_font_size = 5
@@ -96,7 +114,6 @@ class _EvansPlotter:
      
      
     def get_hue_value_labels(self):
-        print("frog hello")
         if self.hue_value_labels is None:
             #return [str(x) for x in self._unique_hue_data_values]
             return [str(x+1) for x in range(self.num_hue_levels)]
@@ -109,7 +126,7 @@ class _EvansPlotter:
         
     def _get_hue_data_quantized(self): 
         bins = self.get_hue_bins()
-        print("bins", bins)
+        #print("bins", bins)
         #data = np.nan_to_num(self.hue_data)
         data = np.digitize(self.hue_data, bins) # quantize or digitze data into these bins
         data = data - self.hue_data_min # colors start at index 0
@@ -125,10 +142,9 @@ class _EvansPlotter:
         
     def _cmap(self):
         if self.cmap is None:
-            if self.cyclic:
-                cmap = mpl.pyplot.get_cmap("hsv")
-            else:
-                cmap = mpl.pyplot.get_cmap("coolwarm")
+            #if self.cyclic:
+            cmap = mpl.pyplot.get_cmap("hsv")
+            #cmap = mpl.pyplot.get_cmap("coolwarm")
         else:
             if isinstance(self.cmap, str):
                 cmap = mpl.pyplot.get_cmap(self.cmap)
@@ -155,19 +171,23 @@ class _EvansPlotter:
                 self.hue_data.lat.min(), 
                 self.hue_data.lat.max()]
     
+    def _get_bins(self):
+        return np.linspace(0, 1, self.num_sat_levels)[1:]
+    
     def _saturation_factor(self):
         """Return a matrix of saturation values [0,1] quantized"""
         # scale saturation data to [0, 1]
         a = (self.sat_data - self.min_sat) / (self.max_sat - self.min_sat)
+        
         # account for mininum saturation
-        a = a * (1 - self.min_sat) + self.min_sat  
+        #a = a * (1 - self.min_sat) + self.min_sat  
         
         #a = a - (1 - self.value_hsv)
         # convert NaNs to 0
         #a = np.nan_to_num(a).astype(np.float32) 
         
         # break alpha into discrete levels
-        bins = np.linspace(0, 1, self.num_sat_levels + 1)[1:]
+        bins = self._get_bins()
         data = np.nan_to_num(self.sat_data)
         q_data = np.digitize(data, bins) / self.num_sat_levels
         return q_data 
@@ -203,7 +223,7 @@ class _EvansPlotter:
         ax.pcolormesh(rgba)
         
         # stretch the color bar so it's nice a long, not square
-        ax.set_aspect(0.3)
+        ax.set_aspect(DEFAULT_ASPECT)
         
         # set x labels
         xtic_locs = [0.5 + x for x in range(self.num_hue_levels)]
@@ -212,12 +232,84 @@ class _EvansPlotter:
                       ha="center")
        
         # set y labels
-        labels = [f"{x:.2g}" for x in list(sat_vals)]
+        label_vals = np.linspace(self.min_sat, self.max_sat, self.num_sat_levels+1)
+        print("label_vals", label_vals)
+        labels = [f"{x:.2g}" for x in list(label_vals)]
         ax.set_yticks(range(len(labels)), labels=[str(x) for x in labels],
                       fontsize=5,
                       ha='right')
         
-    def plot_data(self, ax):
+    def color_bar_cyclic(self, ax):
+        """Render a color bar key into the supplied axes."""
+        colors = self.get_colors()
+        hue_vals = list(range(0, self.num_hue_levels))
+        #sat_vals = np.linspace(self.min_sat, self.max_sat, self.num_sat_levels)
+        #sat_vals = self._get_bins()
+        sat_vals = np.linspace(0, 1, self.num_sat_levels)
+        hue_boxes = np.array([hue_vals])
+        hue_boxes = np.repeat(hue_boxes, len(sat_vals), axis=0)
+        sat_boxes = np.array([sat_vals])
+        sat_boxes = np.repeat(sat_boxes, len(hue_vals), axis=0)
+        sat_boxes = sat_boxes.transpose()
+        print("hue boxed shape", hue_boxes.shape)
+
+        # convert to rgb grids
+        L = self.lightness
+        grey = (L,L,L)
+        rgba = np.ones((hue_boxes.shape[0], hue_boxes.shape[1], 4))
+        for i in (0,1,2): # r, g, b
+            rgba[:, :, i] = colors[:,i][hue_boxes] * sat_boxes + grey[i] * (1-sat_boxes)
+  
+        theta = np.linspace(0, 2*np.pi, self.num_hue_levels+1, endpoint=True)
+        print("theta is ", theta)
+        #r = sat_vals * self.num_sat_levels
+        #r = np.linspace(1, self.num_sat_levels, num=self.num_sat_levels)
+        r = np.linspace(0, self.num_sat_levels, num=self.num_sat_levels+1)
+        #r = self._get_bins()
+        print("r is ", r)
+        ax.set_rlim(0, r[-1])
+        # render the rgba data in the axes
+        ax.pcolormesh(theta, r, rgba, shading='flat')
+        ax.grid(visible=None)
+        ax.set_frame_on(False)
+        
+        # chaneg from polygon to circle
+        ax.set_aspect('equal')
+        
+        #ax.set_aspect(DEFAULT_ASPECT)
+        
+        # set circumference labels
+        delta = 2 * np.pi / self.num_hue_levels
+        xtic_locs = [ x * delta + delta/2 for x in range(self.num_hue_levels)]
+        
+        for i in range(self.num_hue_levels):
+            if xtic_locs[i] > np.pi:
+                xtic_locs[i] = xtic_locs[i] - 2 * np.pi
+        #ax.set_thetalim(0, 2*np.pi)
+        ax.set_xticks(xtic_locs, 
+                      labels=self.get_hue_value_labels(), 
+                      ha="center")
+        
+        # prevent matplotlib from not showing full theta of the plot
+        ax.set_thetalim(-np.pi, np.pi)
+        ax.set_theta_offset(np.pi/2)
+        ax.set_theta_direction(-1)
+       
+        # set labels along the radius
+        label_vals = np.linspace(self.min_sat, self.max_sat, self.num_sat_levels+1)
+        print("label_vals", label_vals)
+        labels = [f"{x:.2g}" for x in list(label_vals)]
+        ax.set_rticks(range(len(labels)), labels=[str(x) for x in labels],
+                      fontsize=7,
+                      ha='center')
+        ax.set_rlabel_position(0)
+        
+        # ax.set_rticks([])
+        # for i in range(len(labels)):
+        #     ax.text(0,i, labels[i])
+        
+   
+    def plot_data(self, ax, **kwargs):
         """Render the data variables as hue and saturation pixels into the supplied axes."""
         # convert hue_data array to RGB
         hue_data_q = self._get_hue_data_quantized()
@@ -235,46 +327,86 @@ class _EvansPlotter:
         # render the color mesh
         ax.pcolormesh(self.lon, 
                       self.lat, 
-                      rgba)
-    def plot(self):
+                      rgba, 
+                      **kwargs)
+    
+    def plot(self, ax, cbar_ax=None, **kwargs):
         """Plot the data and color bar to a figure."""
-        fig = plt.figure(figsize=self.figsize)
-        if self.show_cbar == 'vertical':
+        # if ax is None:
+        #     ax, cbar_ax = self.get_axes()
+       
+        # plot main axis
+        ax.set_extent(self._extent(), crs=self.projection)
+        # This line generates the actual plot
+        self.plot_data(ax, **kwargs)
+        
+        # add cartopy features
+        for f in self.cartopy_features:
+            ax.add_feature(f, alpha=self.feature_alpha)
+        # Add gridlines
+        gl = ax.gridlines(draw_labels=True, alpha=self.feature_alpha)
+        gl.top_labels = False
+        gl.right_labels = False
+        
+            
+        # show color bar
+        if self.cbar is None:
+            pass
+        elif self.cbar == 'cyclic':
+            self.color_bar_cyclic(cbar_ax)
+        elif self.cbar == 'vertical':
+            print("Warning: vertical colorbar not supported")
+        else: # self.cbar == 'horizontal':
+            # default, horizontal cbar
+            self.color_bar_horz(cbar_ax)
+        #return fig
+    
+    def get_axes(self, fig=None, title=None, figsize=None):
+        if fig is None:
+            fig = plt.figure(figsize=figsize)
+            # Add title
+            if title is not None:
+                fig.suptitle(title, fontsize=self.font_size_title)
+        
+        if self.cbar == 'cyclic':
+            gs = GridSpec(1, 2, width_ratios=[5, 1]) 
+            ax1 = fig.add_subplot(gs[0], projection=self.projection)
+            ax2 = fig.add_subplot(gs[1], projection="polar")
+        elif self.cbar == 'vertical':
             gs = GridSpec(1, 2, width_ratios=[5, 1]) 
             ax1 = fig.add_subplot(gs[0], projection=self.projection)
             ax2 = fig.add_subplot(gs[1])
-        elif self.show_cbar == "horizontal":
+        elif self.cbar is not None: # == "horizontal":
+            print("horizontal...")
             gs = GridSpec(2, 1, height_ratios=[7, 1]) 
             ax1 = fig.add_subplot(gs[0], projection=self.projection)
             ax2 = fig.add_subplot(gs[1])
         else:
             ax1 = fig.add_subplot(projection=self.projection)
-            
-        # plot main axis
-        ax1.set_extent(self._extent(), crs=self.projection)
-        # This line generates the actual plot
-        self.plot_data(ax1)
-        
-        # add cartopy features
-        for f in self.cartopy_features:
-            ax1.add_feature(f, alpha=self.feature_alpha)
-        # Add gridlines
-        gl = ax1.gridlines(draw_labels=True, alpha=self.feature_alpha)
-        gl.top_labels = False
-        gl.right_labels = False
-        # Add title
-        if self.title:
-            fig.suptitle(self.title, fontsize=16)
-            
-        # show color bar
-        if self.show_cbar == 'vertical':
-            print("Warning: vertical colorbar not supported")
-        elif self.show_cbar == 'horizontal':
-            self.color_bar_horz(ax2)
-        return fig
+            ax2 = None
+        return ax1, ax2
     
     
-def evans_plot(data, hue_var, sat_var, num_hue_levels=None, ax = None):
+def evans_plot(data, 
+               hue_var, 
+               sat_var, 
+               num_hue_levels=None, 
+               num_sat_levels=5,
+               min_sat=None,
+               max_sat=None,
+               fig=None,
+               ax=None, 
+               cbar_ax=None,
+               figsize=None,
+               cmap=None, 
+               cbar=True, 
+               #xticklabels=None, 
+               #yticklabels=None,
+               hue_value_labels=None,
+               title=None,
+               hue_offset_deg = 0,
+               lightness = DEFAULT_LIGHTNESS,
+               **kwargs):
     """Plot two variables of rectangular data as hue and saturation. 
     
     The datasets are assumed to be aligned and the same shape.
@@ -311,14 +443,36 @@ def evans_plot(data, hue_var, sat_var, num_hue_levels=None, ax = None):
         
     """
     # Initialize the plotter object
-    plotter = _EvansPlotter(data, vmin, vmax, cmap, center, robust, annot, fmt,
-                          annot_kws, cbar, cbar_kws, xticklabels,
-                          yticklabels, mask)
+    # plotter = _EvansPlotter(data, vmin, vmax, cmap, center, robust, annot, fmt,
+    #                       annot_kws, cbar, cbar_kws, xticklabels,
+    #                       yticklabels, mask)
     
-    # Draw the plot and return the Axes
+    plotter = _EvansPlotter(data, 
+                            hue_var, 
+                            sat_var, 
+                            num_hue_levels=num_hue_levels,
+                            num_sat_levels=num_sat_levels,
+                            min_sat=min_sat,
+                            max_sat=max_sat,
+                            cmap=cmap, 
+                          cbar=cbar, 
+                          hue_value_labels=hue_value_labels,
+                          lightness=lightness,
+                          hue_offset_deg=hue_offset_deg
+                          )
+
+    
     if ax is None:
-        ax = plt.gca()
-    plotter.plot(ax, cbar_ax, kwargs)
-    return ax   
+        #    fig = plt.gcf()?
+        #    ax = plt.gca()?
+        ax, cbar_ax = plotter.get_axes(fig, title, figsize)
+    else:
+        # otherwise make sure the figure belongs to the axes we're working with
+        fig = ax.figure
+
+    # Draw the plot and return the Axes
+    plotter.plot(ax=ax, cbar_ax=cbar_ax, **kwargs)
+   
+    return fig #ax, cbar_ax
        
 
