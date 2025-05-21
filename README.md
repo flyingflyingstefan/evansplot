@@ -8,4 +8,3 @@ The variable associated with saturation indicates "importance" since low values 
 
 This library is based on the NCL library for generating Evans plots written by by Dr. Jason Evans, an ARC Australian Research Fellow at the Climate Change Research Center, University of New South Wales, Sydney, Australia.
 
-Add something
