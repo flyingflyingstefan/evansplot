@@ -14,9 +14,10 @@ from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 
 DEFAULT_LIGHTNESS = 0.8
 DEFAULT_ASPECT = 0.35 # 0.25
-MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+DEFAULT_FIGSIZE = (20, 7.5)
+LABELS_MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
-__all__ = ["evans_plot", "EvansPlotter", "MONTHS"]
+__all__ = ["evans_plot", "EvansPlotter", "LABELS_MONTHS"]
 
 def _cmap_discretize(cmap, N):
     """Return a discrete colormap from the continuous colormap cmap.    
@@ -65,7 +66,7 @@ class EvansPlotter:
         self.lon = self.hue_data.lon
         self.num_sat_levels = num_sat_levels
         self.cmap = cmap
-        
+
         # cartography
         self.projection = ccrs.PlateCarree()
         self.feature_alpha = 0.3 # map cartopy features transparency
@@ -428,6 +429,8 @@ class EvansPlotter:
     
     def get_axes(self, fig=None, title=None, figsize=None):
         if fig is None:
+            if figsize is None:
+                figsize = DEFAULT_FIGSIZE
             fig = plt.figure(figsize=figsize)
             # Add title
             if title is not None:
