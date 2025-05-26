@@ -608,7 +608,7 @@ def evans_plot(data, hue_var, sat_var,
         :meth:`matplotlib.axes.Axes.pcolormesh`.
         
     """
-    plotter = _EvansPlotter(data, hue_var, sat_var, 
+    plotter = EvansPlotter(data, hue_var, sat_var, 
                             hue_threshhold_step_size=hue_threshhold_step_size,
                             num_sat_levels=num_sat_levels,
                             min_sat=min_sat, max_sat=max_sat,
