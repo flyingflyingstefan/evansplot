@@ -456,9 +456,7 @@ class EvansPlotter:
         else:
             ax1 = fig.add_subplot(projection=self.projection)
             ax2 = None
-        # get rid of the degrees symbol on the axes
-        ax1.xaxis.set_major_formatter(LongitudeFormatter(degree_symbol=''))
-        ax1.yaxis.set_major_formatter(LatitudeFormatter(degree_symbol='')) 
+        
         return ax1, ax2    
    
     def plot_data(self, ax, **kwargs):
@@ -502,6 +500,10 @@ class EvansPlotter:
         gl.xlabel_style = {'size': self.font_size}
         gl.ylabel_style = {'size': self.font_size}
         
+        # get rid of the degrees symbol on the axes
+        ax.xaxis.set_major_formatter(LongitudeFormatter(degree_symbol=''))
+        ax.yaxis.set_major_formatter(LatitudeFormatter(degree_symbol='')) 
+        
         # show color bar
         if self.cbar is None or self.cbar == False:
             pass # no color bar
@@ -518,7 +520,8 @@ class EvansPlotter:
 def evans_plot(data, hue_var, sat_var, 
                num_sat_levels=5, min_sat=None, max_sat=None,
                hue_threshhold_step_size=None, hue_threshholds=None,
-               fig=None, ax=None, cbar_ax=None, figsize=None,
+               #fig=None, 
+               ax=None, cbar_ax=None, figsize=None,
                cbar=True,
                title=None, hue_label=None, sat_label=None,
                cmap=None, 
@@ -631,15 +634,14 @@ def evans_plot(data, hue_var, sat_var,
     plotter.hue_label = hue_label #or hue_var
     plotter.sat_label = sat_label #or sat_var
     if ax is None:
-        #    fig = plt.gcf()? #    ax = plt.gca()?
-        # if fig is None:
-        #     fig = plt.gcf()
-        ax, cbar_ax = plotter.get_axes(fig, title, figsize)
+        ax, cbar_ax = plotter.get_axes(None, title, figsize)
+        fig = ax.figure
     else:
         # otherwise set figure to return from the supplied axes
         fig = ax.figure
-
-    
+        if cbar_ax is None and plotter.cbar is not None or False:
+            raise ValueError("If ax is supplied, cbar_ax must also be supplied or cbar must be False")
+            
     # Draw the plot and return the Axes
     plotter.plot(ax=ax, cbar_ax=cbar_ax, **kwargs)
     
