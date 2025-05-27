@@ -126,26 +126,25 @@ class EvansPlotter:
         """
         How many hue levels to display on the color bar.
         This can be equal to number of bins, eg if discrete data, 
-        or +1 if continuous and max bin is exceeded."""
+        or +1 if continuous and max bin is exceeded.
+        """
         # as we're using digitize with right=True then we only need to check whether
         # last bin value has been reached or exceeded
         data_range = self._hue_data_q.max() - self._hue_data_q.min() + 1
         n = max(data_range, len(self._get_hue_bins()))
-
         return n
      
     # Utilitiy functions 
      
     def _extent(self):
-        # Return the bounding box of lat & lon
+        """Return the bounding box of lat & lon"""
         return [self.lon.min(), 
                 self.lon.max(), 
                 self.lat.min(), 
                 self.lat.max()]
         
     def _get_unique_data_values(self, data):
-        # Return sorted list of the unique values in supplied data object, 
-        # ignoring NaNs
+        """Return sorted list of the unique values in supplied data object, ignoring NaNs"""
         unique = data.to_dataframe().iloc[:, 0].unique()
         unique.sort()
         if np.isnan(unique[-1]):
@@ -153,7 +152,7 @@ class EvansPlotter:
         return unique
         
     def _suggest_step_size(self, data):
-        # Return a good sugestino for step size for the data
+        """Return a good sugestion for a step size for the data"""
         # TODO: make this smarter
         min = data.min().item()
         max = data.max().item()
@@ -173,6 +172,7 @@ class EvansPlotter:
     # Hue Data processing 
      
     def get_hue_value_labels(self):
+        """Return a list of labels for the hue values"""
         if self.hue_value_labels is not None:
             # is user has provided hue value labels, use them
             return self.hue_value_labels
@@ -183,6 +183,7 @@ class EvansPlotter:
         
     
     def _get_hue_bins(self):
+        """Return a list of hue bins, which are the thresholds for the hues"""
         if self.hue_threshholds is not None:
             # if user has provided hue threshholds, use them
             return self.hue_threshholds
@@ -199,6 +200,7 @@ class EvansPlotter:
             return threshholds
         
     def _hue_data_quantized(self): 
+        """Return a quantized version of the hue data into hue bins"""
         bins = self._get_hue_bins()
         #data = np.nan_to_num(self.hue_data)
         data = np.nan_to_num(self.hue_data, nan=0) # convert nans to 0
@@ -232,6 +234,7 @@ class EvansPlotter:
     # Color functions
     
     def _cmap(self):
+        """Return the color map to use"""
         if self.cmap is None:
             cmap = mpl.pyplot.get_cmap("hsv")
         else:
@@ -241,7 +244,8 @@ class EvansPlotter:
                 cmap = self.cmap
         if self.hue_offset_deg:
             cmap = self._rotate_cmap(self.hue_offset_deg, cmap)
-        return _cmap_discretize(cmap, self.num_hue_levels)
+        return cmap
+        #return _cmap_discretize(cmap, self.num_hue_levels)
 
     def _rotate_cmap(self, deg, cmap): 
         # rotate the colormap by degrees
