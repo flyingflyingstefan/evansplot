@@ -1,16 +1,12 @@
 
 import math
-import xarray as xr
 import numpy as np
+import xarray as xr
 import matplotlib.pyplot as plt
-import matplotlib as mpl
-from mpl_toolkits.axes_grid1 import make_axes_locatable
-from matplotlib.gridspec import GridSpec
+import matplotlib 
 import cartopy
-import cartopy.crs as ccrs
-import cartopy.feature as cfeature
+from matplotlib.gridspec import GridSpec
 from cartopy.mpl.ticker import LongitudeFormatter, LatitudeFormatter
-from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 
 DEFAULT_LIGHTNESS = 0.8
 DEFAULT_ASPECT = 0.35 # 0.25
@@ -25,7 +21,7 @@ def _cmap_discretize(cmap, N):
     N: number of colors.    
     """
     if type(cmap) == str:
-        cmap = mpl.pyplot.get_cmap(cmap)
+        cmap = plt.get_cmap(cmap)
     start_buff = (1./ N) * 0.5
     colors_i = np.linspace(start_buff, 1 - start_buff, N)
     colors_i = np.concatenate((colors_i, (0., 0., 0.)))
@@ -68,9 +64,14 @@ class EvansPlotter:
         self.cmap = cmap
 
         # cartography
-        self.projection = ccrs.PlateCarree()
+        self.projection = cartopy.crs.PlateCarree()
         self.feature_alpha = 0.3 # map cartopy features transparency
-        self.cartopy_features = [cfeature.COASTLINE, cfeature.BORDERS, cfeature.LAKES,  cfeature.RIVERS, cfeature.OCEAN, cfeature.LAND]
+        self.cartopy_features = [cartopy.feature.COASTLINE, 
+                                 cartopy.feature.BORDERS, 
+                                 cartopy.feature.LAKES,  
+                                 cartopy.feature.RIVERS, 
+                                 cartopy.feature.OCEAN, 
+                                 cartopy.feature.LAND]
         
         self._hue_data_discrete = True 
         self._sat_data_discrete = False 
@@ -236,10 +237,10 @@ class EvansPlotter:
     def _cmap(self):
         """Return the color map to use"""
         if self.cmap is None:
-            cmap = mpl.pyplot.get_cmap("hsv")
+            cmap = plt.get_cmap("hsv")
         else:
             if isinstance(self.cmap, str):
-                cmap = mpl.pyplot.get_cmap(self.cmap)
+                cmap = plt.get_cmap(self.cmap)
             else:
                 cmap = self.cmap
         if self.hue_offset_deg:
@@ -255,7 +256,7 @@ class EvansPlotter:
             deg += 360
         cutpoint = n * deg // 360
         new_col_arr = [cmap(i) for i in range(cutpoint, n)] + [cmap(i) for i in range(cutpoint)]
-        return mpl.colors.ListedColormap(new_col_arr)
+        return matplotlib.colors.ListedColormap(new_col_arr)
         
     def get_colors(self):
         """Return array of rgb values to use for the hues"""
@@ -501,8 +502,8 @@ class EvansPlotter:
         gl.ylabel_style = {'size': self.font_size}
         
         # get rid of the degrees symbol on the axes
-        ax.xaxis.set_major_formatter(LongitudeFormatter(degree_symbol=''))
-        ax.yaxis.set_major_formatter(LatitudeFormatter(degree_symbol='')) 
+        ax.xaxis.set_major_formatter(cartopy.mpl.ticker.LongitudeFormatter(degree_symbol=''))
+        ax.yaxis.set_major_formatter(cartopy.mpl.ticker.LatitudeFormatter(degree_symbol='')) 
         
         # show color bar
         if self.cbar is None or self.cbar == False:
