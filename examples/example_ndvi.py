@@ -1,8 +1,8 @@
+
+import evansplot
 import matplotlib.pyplot as plt
 import xarray as xr
 import sys
-sys.path.append("../src") # path to evansplot src dir
-import evansplot
 
 ndvi = xr.open_dataset("ndvi_time.nc")
 f = evansplot.evans_plot(ndvi, 

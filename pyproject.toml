@@ -1,16 +1,19 @@
+[build-system]
+requires = ["setuptools >= 77.0.3"]
+build-backend = "setuptools.build_meta"
 [project]
-name = "Evans Plot"
+name = "evansplot"
+version = "0.1a"
 authors = [{ name = "Stefan Gregory", email = "stefan.gregory@gmail.com" },
            { name = "Jason Evans", email = "jason.evans@unsw.edu.au" }]
 description = "A Python plotting library for visualising two variables simultaneously using hue and saturation"
 readme = "README.md"
 keywords = ["plotting", "visualisation", "map", "variables", "hue", "saturation"]
-dynamic = ["version"]
 dependencies = [
     "numpy>=1.23",
     "matplotlib>=3.6",
-    "cartopy>=0.24.1",
-    "xarray>=2025.1.2",
+    "cartopy",
+    "xarray",
 ]
-requires-python = ">= 3.12"
+requires-python = ">= 3.11"
 
