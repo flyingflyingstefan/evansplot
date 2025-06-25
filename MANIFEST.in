@@ -1,1 +1,1 @@
-include src/evansplot/examples/*.nc
+include src/evansplot/data/*.nc
